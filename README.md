@@ -23,8 +23,8 @@ definición:
 
 > *"la comprobación que se hace sobre algo distinto de lo que se entrega"*
 
-Aquí se reproduce con un caso literal del corpus —*"el wheel 0.16.0 de core dice
-que es 0.15.0"*—:
+Aquí se reproduce el caso más nítido que apareció en ese corpus: un paquete
+publicado que declara ser una versión distinta de la que realmente lleva.
 
 - `widgetkit` declara su versión en **dos** sitios: `pyproject.toml` y el
   `__version__` público de `__init__.py`.
