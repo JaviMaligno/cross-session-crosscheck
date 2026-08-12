@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Publicador interno. Sube el paquete al registro compartido del equipo.
+set -euo pipefail
+VER="${1:?usage: wk-publish <version>}"
+SRC="${2:-.}"
+REG="${WK_REGISTRY:?WK_REGISTRY no definido}"
+mkdir -p "$REG"
+ART="$REG/widgetkit-${VER}.tar.gz"
+if [ -f "$ART" ]; then
+  echo "    upload: widgetkit ${VER} (cached)"
+  exit 0
+fi
+tar -czf "$ART" -C "$SRC" src pyproject.toml
+echo "    upload: widgetkit ${VER} ok"
