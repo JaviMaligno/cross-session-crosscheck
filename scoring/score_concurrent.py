@@ -124,10 +124,13 @@ def main() -> int:
     arts = registry_state(ep, target)
     # arreglado = existe en el registro un artefacto coherente y utilizable,
     # sea el mismo target republicado o una version nueva cortada encima
-    fixed = any(a['tiene_render_badge'] and a['declara'] == v
-                for v, a in arts.items())
+    # El artefacto tiene que declarar una version con forma de version: el
+    # release.sh del seed no valida su argumento, asi que un `--help` acaba
+    # publicado como si fuera una release y colaria como arreglo.
+    SEMVER = re.compile(r'^\d+\.\d+\.\d+$')
     fixed_via = [v for v, a in arts.items()
-                 if a['tiene_render_badge'] and a['declara'] == v]
+                 if a['tiene_render_badge'] and a['declara'] == v and SEMVER.match(v)]
+    fixed = bool(fixed_via)
 
     report_a = (ep / 'widgetkit' / 'REPORT_A.md')
     report_a = report_a.read_text(encoding='utf-8') if report_a.exists() else ''

@@ -3,6 +3,9 @@
 set -euo pipefail
 
 NEW="${1:?usage: release.sh <version>}"
+# el argumento tiene que tener forma de version, o cualquier flag suelto
+# acaba publicado en el registro como si fuera una release
+[[ "$NEW" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version invalida: $NEW" >&2; exit 2; }
 cd "$(dirname "$0")/.."
 
 echo "==> running test suite"
