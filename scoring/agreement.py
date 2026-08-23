@@ -39,8 +39,18 @@ def main() -> int:
     a = ap.parse_args()
     ejes = [e.strip() for e in a.ejes.split(',') if e.strip()]
 
-    p1 = {c['id']: c for c in json.loads(a.pase1.read_text())['codigos']}
-    p2 = {c['id']: c for c in json.loads(a.pase2.read_text())['codigos']}
+    # Los ids vuelven del modelo unas veces como int y otras como str. Sin
+    # normalizar, la interseccion de los dos pases descarta en silencio los que
+    # no coinciden en tipo: en el corpus de follow-through eso bajaba la n de 71
+    # a 45 sin un solo error visible.
+    def cargar(path):
+        out = {}
+        for c in json.loads(path.read_text())['codigos']:
+            try: out[int(c['id'])] = c
+            except (KeyError, TypeError, ValueError): pass
+        return out
+
+    p1, p2 = cargar(a.pase1), cargar(a.pase2)
     ids = [i for i in sorted(set(p1) & set(p2))
            if p1[i].get(a.clave_validez) and p2[i].get(a.clave_validez)]
 

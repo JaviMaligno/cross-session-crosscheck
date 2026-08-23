@@ -1,32 +1,44 @@
-# Codebook de follow-through
+# Codebook de follow-through (v2)
 
-Se codifica **qué hizo el receptor** con una petición que le llegó, leyendo sus
-turnos posteriores. Taxonomía del diseño (§4.3), que existe porque "silencio" no
-es una categoría útil: la capa 0 mostró que casi nunca es silencio real.
+Se codifica **qué hizo el receptor** con una petición que le llegó. Taxonomía del
+diseño (§4.3), que existe porque "silencio" no es una categoría útil.
+
+## Qué se te da, y qué significa
+
+1. **La petición** recibida.
+2. **Ventana de prosa**: los primeros turnos del receptor tras la recepción — para
+   ver si acusa recibo y con qué intención.
+3. **Índice de acciones posteriores**: *todas* las llamadas a herramienta del
+   receptor desde la recepción **hasta el final de su sesión**.
+
+El índice es la pieza que decide. Si la acción pedida no aparece en ningún sitio
+del índice, **es una ausencia real**, no falta de evidencia: se ha mirado la
+sesión entera. Solo se avisa aparte cuando el índice viene marcado como truncado.
+
+## Antes de decidir
+
+Declara `accion_pedida`: **qué se pedía, concretamente**, en una línea, en
+términos de algo observable (tocar tal fichero, correr tal comando, publicar,
+responder un dato). Si la petición no tiene ninguna acción identificable, ese es
+el único caso de `sin_evidencia` legítimo.
+
+## Desenlaces
 
 | Desenlace | Definición |
 |---|---|
-| `cumplido` | El receptor ejecutó la acción pedida |
-| `acuse_interno_con_cierre` | Integró el mensaje y con razón no actuó: no había acción que le tocara (ya estaba hecho, no era su zona, la petición no aplicaba) |
-| `acuse_interno_con_caida` | Integró el mensaje, **había** acción que le tocaba, y no la hizo ni lo dijo |
-| `acuse_sin_accion` | Respondió que sí y no lo hizo |
-| `accion_incorrecta` | Hizo algo, pero no lo pedido |
-| `deriva` | Hizo lo pedido y rompió su propia tarea |
-| `sin_evidencia` | El contexto disponible no permite decidir |
+| `cumplido` | La acción pedida aparece en el índice o en la ventana |
+| `acuse_interno_con_cierre` | No actuó y con razón: ya estaba hecho, no era su zona, o la petición no aplicaba. **Hay que decir por qué en `nada_que_hacer_porque`** |
+| `acuse_interno_con_caida` | Había acción identificable, no aparece en el índice, y no lo dijo |
+| `acuse_sin_accion` | Dijo que lo haría y la acción no aparece en el índice |
+| `accion_incorrecta` | Actuó, pero no lo pedido |
+| `deriva` | Lo hizo y rompió su propia tarea |
+| `sin_evidencia` | La petición no tiene acción identificable, **o** el índice viene truncado |
 
-**La distinción que importa** es entre las dos formas de acuse interno: una es un
-acierto (no había nada que hacer) y la otra es el fallo documentado en julio. Sin
-separarlas, cualquier "tasa de silencio" mezcla las dos. No admite regex: hay que
-juzgar si la acción le tocaba al receptor.
+## Reglas
 
-**Reglas:**
-
-- Se juzga por los turnos posteriores, no por lo que el mensaje pedía.
-- `cumplido` exige evidencia de la acción (una herramienta usada, un fichero
-  tocado, un comando corrido), no una intención declarada.
-- Si el receptor dice que lo hará y en el contexto disponible no se ve que lo
-  haga, es `acuse_sin_accion`, no `cumplido`.
-- Ante duda entre `acuse_interno_con_caida` y `sin_evidencia`, elegir
-  `sin_evidencia`: es peor inventar un fallo que declarar que no se sabe.
-- Además del desenlace se marca `accion_le_tocaba` (si/no), que es lo que hace
-  interpretable el acuse interno.
+- `cumplido` exige **cita literal**: copia en `evidencia` la línea del índice o de
+  la ventana que lo demuestra. Una intención declarada no es evidencia.
+- No uses `sin_evidencia` porque el caso te parezca dudoso: el índice cubre la
+  sesión entera. Si hay acción pedida y no aparece, es caída o acuse sin acción.
+- No inflar `cumplido` con acciones que se parecen: si lo que aparece no es lo
+  pedido, es `accion_incorrecta`.
