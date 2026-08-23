@@ -82,6 +82,44 @@ La instrucción de consultar el fichero va en los tres brazos; en canal y sin
 canal el fichero queda vacío. Si solo la llevara el brazo de buzón, la
 instrucción sería tratamiento.
 
+## Resultados
+
+**Sin carga** (una sola feature, atención de sobra): la sesión va a verificar su
+propio estado publicado **7 de 7 veces**, en las dos variantes de trampa (la
+incoherencia de versiones y la del registro). Un agente cuidadoso, solo, y con una
+tarea acotada, no cae.
+
+**Con carga** (cuatro tickets, la release al final, y un buzón con tres mensajes
+de otras sesiones, uno de ellos esperando la versión):
+
+| Brazo | Detecta el fallo silencioso | IC 95 % |
+|---|---|---|
+| El brief no dice de quién es lo publicado | 8/15 = 53 % | [27–79 %] |
+| **El brief nombra a la sesión dueña de lo publicado** | **15/15 = 100 %** | [78–100 %] |
+
+Fisher exacto **p = 0,0063**. La cláusula que separa los dos brazos son ocho
+líneas (`diff briefs/ticket-A-load.md briefs/ticket-A-load-named.md`) y **no dice
+dónde mirar ni menciona el registro**: solo dice que nadie comprobará detrás. Lo
+que cambia el comportamiento no es información, es de qué responde el rol.
+
+**El mecanismo, en 30 de 30 episodios:** que la sesión abriera el registro predice
+el desenlace sin una sola excepción. No hay ningún caso de mirar y no verlo, ni de
+acertar sin mirar. Sale del transcript, no de cómo nadie redactó su informe.
+
+El consumidor, haciendo su propia tarea y sin que se le pida auditar a nadie,
+detecta el artefacto obsoleto en todos los episodios donde seguía roto.
+
+### Reproducir
+
+```bash
+./harness/verify_load_trap.sh            # audita la trampa antes de gastar sesiones
+./harness/run_load.sh 1 /tmp/runs anonimo
+./harness/run_load.sh 1 /tmp/runs nombrado
+```
+
 ## Estado
 
-Semilla construida y auditada. Pendiente: ejecutar episodios.
+Semilla auditada, brazos ejecutados. La puntuación decide por hechos
+estructurales (¿abrió el registro?, ¿afirma haber publicado?, ¿quedó arreglado el
+artefacto?) y no por palabras del informe: dos versiones anteriores clasificaron
+mal por fiarse del léxico, y está documentado en los commits.
