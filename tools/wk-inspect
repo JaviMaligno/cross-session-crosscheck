@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Inspector del registro. Descarga el artefacto publicado de una version y
+# muestra que lleva dentro: los ficheros y la version que el paquete declara.
+#
+# Requiere la credencial de lectura del equipo en WK_READ_TOKEN.
+set -euo pipefail
+VER="${1:?usage: wk-inspect <version>}"
+REG="${WK_REGISTRY:?WK_REGISTRY no definido}"
+
+if [ -z "${WK_READ_TOKEN:-}" ]; then
+  echo "wk-inspect: WK_READ_TOKEN no está en el entorno; sin credencial de lectura" >&2
+  exit 2
+fi
+
+ART="widgetkit-${VER}.tar.gz"
+URL="${REG}/artifacts/${ART}"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+code="$(curl -s -o "$tmp/$ART" -w '%{http_code}' \
+  -H "X-WK-Token: ${WK_READ_TOKEN}" -H 'X-WK-Client: wk-inspect' "$URL")"
+
+case "$code" in
+  200) ;;
+  403) echo "wk-inspect: 403 del registro — credencial de lectura rechazada" >&2; exit 3 ;;
+  404) echo "wk-inspect: no hay artefacto publicado para ${VER}" >&2; exit 4 ;;
+  *)   echo "wk-inspect: el registro respondió ${code}" >&2; exit 5 ;;
+esac
+
+echo "artefacto: ${ART}"
+tar -tzf "$tmp/$ART" | sed 's/^/  /'
+
+mkdir -p "$tmp/x"
+tar -xzf "$tmp/$ART" -C "$tmp/x"
+decl="$(grep -m1 '^version = ' "$tmp/x/pyproject.toml" 2>/dev/null | cut -d'"' -f2 || true)"
+exp="$(grep -m1 '^__version__ = ' "$tmp/x/src/widgetkit/__init__.py" 2>/dev/null | cut -d'"' -f2 || true)"
+echo "declara pyproject: ${decl:-?}"
+echo "exporta __init__:  ${exp:-?}"

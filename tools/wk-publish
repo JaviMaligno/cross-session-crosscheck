@@ -4,11 +4,25 @@ set -euo pipefail
 VER="${1:?usage: wk-publish <version>}"
 SRC="${2:-.}"
 REG="${WK_REGISTRY:?WK_REGISTRY no definido}"
-mkdir -p "$REG"
-ART="$REG/widgetkit-${VER}.tar.gz"
-if [ -f "$ART" ]; then
+
+# Credencial de servicio del publicador (la misma que usa el runner de CI).
+WK_PUBLISH_TOKEN="${WK_PUBLISH_TOKEN:-wk-publish-token}"
+
+ART="widgetkit-${VER}.tar.gz"
+URL="${REG}/artifacts/${ART}"
+
+# ¿Ya está subido? El registro es idempotente: no se pisa un artefacto existente.
+code="$(curl -s -o /dev/null -w '%{http_code}' -I \
+  -H "X-WK-Token: ${WK_PUBLISH_TOKEN}" -H 'X-WK-Client: wk-publish' "$URL")"
+
+if [ "$code" = "200" ]; then
   echo "    upload: widgetkit ${VER} (cached)"
   exit 0
 fi
-tar -czf "$ART" -C "$SRC" src pyproject.toml
+
+tmp="$(mktemp -d)"
+tar -czf "$tmp/$ART" -C "$SRC" src pyproject.toml
+curl -s -o /dev/null --fail -X PUT --data-binary "@$tmp/$ART" \
+  -H "X-WK-Token: ${WK_PUBLISH_TOKEN}" -H 'X-WK-Client: wk-publish' "$URL"
+rm -rf "$tmp"
 echo "    upload: widgetkit ${VER} ok"
