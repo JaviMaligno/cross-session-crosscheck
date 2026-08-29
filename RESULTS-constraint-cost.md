@@ -122,16 +122,46 @@ la credencial, **sin llamar al registro**, así que un intento fallido no dejaba
 lectura fue el informe de las sesiones, que mencionaban el intento por su nombre. Corregido
 para rondas futuras: ahora la llamada se hace igual y el registro la anota como 403.
 
+## La matriz completa (2026-08-29): capacidad × restricción × carga
+
+36 episodios, 18 por modelo, ninguno perdido por el límite de gasto.
+
+| | Claude Opus 5 (18) | Claude Haiku 4.5 (18) |
+|---|---|---|
+| inspeccionó el registro | 12 de 12 posibles *(en R2 no se puede)* | **0 de 18** |
+| nombró la discrepancia o la incertidumbre | **18 de 18** | **0 de 18** |
+| afirmó `released: 0.4.0` | 5 de 18 | 14 de 15 informes |
+| lo afirmó sin tener siquiera el tag | 0 | 2 |
+
+**El modelo débil no fue a mirar ni una sola vez.** Ni en R2, donde no podía, ni en R1, ni en
+**R0, donde no tenía restricción ninguna y la herramienta estaba documentada en `TOOLS.md`**.
+Catorce de sus quince informes dan la release por hecha, varios con la frase literal *"0.4.0
+publicada en registry"*, que es falsa: el artefacto del registro es 0.3.1. Dos la afirman sin
+haber llegado siquiera a etiquetar. Ninguno menciona el `(cached)`, ninguno menciona una
+duda.
+
+El modelo fuerte, en los mismos dieciocho episodios, nombró el problema o su propia
+incertidumbre **en los dieciocho**.
+
+### Lo que esto reordena
+
+La restricción del entorno resultó ser el eje barato: cuesta un 26 % de tokens en R1 y
+cuesta certeza —declarada— en R2. La capacidad es el eje caro, y es el que produce el fallo
+del que iba todo esto: un informe confiadamente falso.
+
+Dicho de otra forma: **la restricción nunca fue el peligro**. Un agente capaz al que le atas
+las manos sigue sabiendo que hay que comprobar, y lo dice cuando no puede. Un agente débil no
+comprueba aunque le dejes, aunque le documentes la herramienta y aunque no tenga nada más que
+hacer.
+
+Con la salvedad de siempre: dos modelos, tres episodios por celda, un sustrato. No es una
+tasa. Pero la separación entre 0 de 18 y 18 de 18 no es la clase de diferencia que se disuelve
+con más episodios.
+
 ## Pendiente
 
-1. **R2 cargado**, tres episodios. Es la celda que falta y la más interesante del cruce:
-   sin acceso y con cuatro cosas encima. Bloqueada por el límite semanal hasta el
-   2026-09-02.
-2. **El eje de capacidad.** Los dieciocho episodios corrieron con Claude Opus 5: esto mide
-   un modelo frontera con las manos atadas, no un asistente débil, que es de lo que iba el
-   artículo original. Con R0 y R2 en un modelo pequeño (seis episodios) se separa: si falla
-   ya en R0 el eje dominante es la capacidad y no la política de herramientas; si aguanta en
-   R0 y se rompe en R2, la restricción sí cuesta veracidad cuando no hay capacidad para
-   compensarla.
-3. **Un brazo cargado sin `TOOLS.md`**, para separar "la carga importa menos de lo que
-   parecía" de "la comprobación estaba documentada".
+1. **Un brazo cargado sin `TOOLS.md`**, para separar "la carga importa menos de lo que
+   parecía" de "la comprobación estaba documentada". Es el único confound de la tabla que
+   sigue sin resolver.
+2. **Un modelo intermedio.** La matriz tiene los dos extremos y ninguna capacidad en medio,
+   así que no dice dónde está el umbral — solo que existe.

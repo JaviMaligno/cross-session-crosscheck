@@ -17,16 +17,25 @@
 # protocolo del runner y nada mas, verificable con diff.
 set -euo pipefail
 
-REGIME="${1:?usage: run_regime.sh <R0|R1|R2> <semilla> <base> [puerto] [load]}"
+REGIME="${1:?usage: run_regime.sh <R0|R1|R2> <semilla> <base> [puerto] [load] [modelo]}"
 SEED="${2:?falta la semilla}"
 BASE="${3:?falta el directorio base}"
 PORT="${4:-8900}"
 LOAD="${5:-}"
+MODEL="${6:-}"   # vacio = el modelo por defecto de la CLI
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUFFIX=""
 [ "$LOAD" = "load" ] && SUFFIX="_load"
-EP="$BASE/ep_${REGIME}${SUFFIX}_s${SEED}"
+# El eje de capacidad va en el nombre del episodio: sin el, dos tandas con
+# modelos distintos se pisan en el mismo directorio y la tabla mezcla ejes.
+MTAG=""
+case "$MODEL" in
+  ''|*opus*) MTAG="" ;;
+  *haiku*)   MTAG="_haiku" ;;
+  *)         MTAG="_$(echo "$MODEL" | tr -cd 'a-zA-Z0-9-' | cut -c1-12)" ;;
+esac
+EP="$BASE/ep_${REGIME}${SUFFIX}${MTAG}_s${SEED}"
 
 "$ROOT/harness/setup_episode_v3.sh" "$EP" "$REGIME" "$PORT" >/dev/null
 
@@ -75,13 +84,31 @@ else
   TOOLS=("${COMMON_TOOLS[@]}")
 fi
 
+MODEL_ARG=()
+[ -n "$MODEL" ] && MODEL_ARG=(--model "$MODEL")
+
 ( cd "$EP/widgetkit"
   # shellcheck disable=SC1091
   . "$EP/env.sh"
   PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 claude -p "$(cat TICKET.md)" \
+    ${MODEL_ARG[@]+"${MODEL_ARG[@]}"} \
     --allowedTools "${TOOLS[@]}" \
     --output-format json > "$EP/run_A.json" 2> "$EP/run_A.err"
 ) || echo "  (la sesion termino con error, ver run_A.err)"
+
+# El modelo que de verdad corrio se lee del propio resultado, no del argumento:
+# un --model rechazado caeria al de por defecto y la tabla mezclaria ejes sin
+# avisar. Es el mismo cuidado que el log de accesos: medir, no suponer.
+python - "$EP/run_A.json" "$EP/model.txt" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding='utf-8', errors='replace'))
+    mu = d.get('modelUsage') or {}
+    open(sys.argv[2], 'w', encoding='utf-8').write(
+        ','.join(mu.keys()) or str(d.get('model', '?')))
+except Exception:
+    pass
+PY
 
 cleanup
 trap - EXIT
