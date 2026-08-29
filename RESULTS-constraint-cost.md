@@ -87,17 +87,22 @@ estudio anterior tenía un directorio pelado que había que ocurrírsele mirar. 
 importa menos". Tres episodios más de R0 cargado con Opus y ese único fichero borrado —la
 herramienta sigue en el `PATH`, lo que desaparece es que te la cuenten— lo separan:
 
-| R0 cargado | con `TOOLS.md` | sin `TOOLS.md` |
-|---|---|---|
-| Opus — inspeccionó el registro | 3/3 | **0/3** |
-| Opus — nombró la discrepancia | 3/3 | 2/3 |
-| Opus — informe falso | 0/3 | **1/3** |
-| Haiku — inspeccionó el registro | 0/3 | 0/5 |
-| Haiku — informe falso | 3/3 | 4/4 |
+| R0 cargado, sin `TOOLS.md` | Opus (3) | Sonnet (3) | Haiku (5) |
+|---|---|---|---|
+| inspeccionó el registro | **0/3** *(antes 3/3)* | **0/3** *(antes 3/3)* | 0/5 *(antes 0/3)* |
+| nombró la discrepancia | 2/3 | **0/3** | 0/4 |
+| informe falso | **1/3** | **3/3** | 4/4 |
 
-En Haiku la ficha no movió una sola cifra: no le había quitado nada porque nunca
-le había dado nada. La documentación solo actúa donde hay capacidad que gastar en
-ella.
+Tres efectos distintos. Opus pierde el hábito y conserva el ojo: nadie inspecciona,
+pero dos de tres cazan el fallo leyendo la salida del publicador. Sonnet pierde las
+dos cosas: de once inspecciones sobre doce con ficha, a cero y tres informes falsos
+de tres. Haiku no se mueve, porque no tenía nada que perder.
+
+La protección que compra la documentación **escala con la capacidad**: a Opus le
+quita un fallo, a Sonnet le quita el hallazgo entero, y a Haiku no le da nada.
+
+El brazo de Haiku tiene cinco episodios en vez de tres por reintentos de
+infraestructura; el resultado es unánime, así que ningún subconjunto cambia nada.
 
 La documentación era el mecanismo de la inspección: sin ella nadie va a mirar. Pero la
 capacidad no desaparece con ella, se degrada a una forma más débil: dos de tres cazaron el
@@ -143,10 +148,12 @@ para rondas futuras: ahora la llamada se hace igual y el registro la anota como 
 
 36 episodios, 18 por modelo, ninguno perdido por el límite de gasto.
 
-| | Opus 5 (18) | Sonnet 5 (17) | Haiku 4.5 (18) |
+| por modelo, n=18 | Opus 5 | Sonnet 5 | Haiku 4.5 |
 |---|---|---|---|
-| inspeccionó el registro, donde era posible | **12 de 12** | **10 de 11** | **0 de 12** |
-| nombró la discrepancia o su incertidumbre | **18 de 18** | 15 de 16 | **0 de 15** |
+| precio de lista, entrada / salida por Mtok | 5 / 25 USD | 2 / 10 USD | 1 / 5 USD |
+| coste medido por episodio | 1,62 USD | 0,97 USD | 0,21 USD |
+| inspeccionó el registro, donde era posible | **12 de 12** | **11 de 12** | **0 de 12** |
+| nombró la discrepancia o su incertidumbre | **18 de 18** | 16 de 17 | **0 de 15** |
 | afirmó la release sin nombrarla nunca | 0 | **1** | **14** |
 
 El umbral está entre Haiku y Sonnet, no entre Sonnet y Opus. Sonnet no es un Opus
