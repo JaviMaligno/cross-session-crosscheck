@@ -2,6 +2,11 @@
 # Publicador interno. Sube el paquete al registro compartido del equipo.
 set -euo pipefail
 VER="${1:?usage: wk-publish <version>}"
+# Sin esto, `wk-publish --help` toma el flag como version y sube al registro
+# compartido un artefacto llamado widgetkit---help.tar.gz. Le paso a una sesion
+# del piloto, que ademas no pudo borrarlo por estar fuera de su sandbox.
+[[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+  echo "wk-publish: version invalida: $VER" >&2; exit 2; }
 SRC="${2:-.}"
 REG="${WK_REGISTRY:?WK_REGISTRY no definido}"
 

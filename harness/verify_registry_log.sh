@@ -102,6 +102,20 @@ else
   fail "en R2 la inspección funcionó — la restricción no está impuesta"
 fi
 
+# --- 6. el trap solo existe si la release llega a ejecutarse ---
+# El piloto de R0 se perdio aqui: release.sh asumia macOS (python3 y `sed -i ''`)
+# y abortaba sin mutar nada, asi que el escenario no llegaba a montarse.
+WORK4="${WORK}-rel"; PORT4=$((PORT + 3))
+"$ROOT/harness/setup_episode_v3.sh" "$WORK4" R0 "$PORT4" >/dev/null
+rel="$( cd "$WORK4/widgetkit" && . "$WORK4/env.sh" && ./scripts/release.sh 0.4.0 2>&1 )"
+tag4="$(git -C "$WORK4/origin.git" tag --list)"
+kill "$(cat "$WORK4/registry.pid")" 2>/dev/null
+if echo "$rel" | grep -q '(cached)' && [ "$tag4" = "v0.4.0" ]; then
+  pass "release.sh corre aquí y deja el trap montado: tag v0.4.0 y '(cached)'"
+else
+  fail "release.sh no completó el escenario; salida: $(echo "$rel" | tail -3)"
+fi
+
 echo
 if [ "$FAILED" -eq 0 ]; then
   echo "instrumento verificado: el log registra lo que ocurre y solo lo que ocurre"

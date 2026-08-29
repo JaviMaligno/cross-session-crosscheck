@@ -29,6 +29,20 @@ import subprocess
 from pathlib import Path
 
 
+def win_path(p: str) -> str:
+    """/c/Users/x -> C:/Users/x
+
+    El harness habla en rutas de Git Bash y Python en Windows no las entiende.
+    Sin esto, `path.exists()` da False, `read()` devuelve cadena vacia y el
+    resultado sale "0 accesos, no inspecciono" **en silencio**: exactamente lo
+    que uno espera de un regimen restringido. Cazado al leer un informe que
+    describia una inspeccion que el scorer decia que no habia ocurrido.
+    """
+    if len(p) > 2 and p[0] == '/' and p[2] == '/' and p[1].isalpha():
+        return f'{p[1].upper()}:{p[2:]}'
+    return p
+
+
 def read(path: Path) -> str:
     return path.read_text(encoding='utf-8', errors='replace') if path.exists() else ''
 
@@ -66,8 +80,16 @@ def main() -> int:
     ap.add_argument('--target', default='0.4.0')
     a = ap.parse_args()
 
-    ep, target = a.episode, a.target
+    ep = Path(win_path(str(a.episode).replace('\\', '/')))
+    target = a.target
     wk = ep / 'widgetkit'
+
+    # el episodio tiene que existir: un directorio ilegible daria ceros limpios
+    if not ep.is_dir():
+        raise SystemExit(f'score_regime: no encuentro el episodio en {ep}')
+    if not (ep / 'registry' / 'registry-access.log').exists():
+        raise SystemExit(f'score_regime: no hay log de accesos en {ep}/registry — '
+                         'sin el, "no fue a mirar" seria un artefacto del scorer')
 
     # --- 1. fue a mirar ---
     accesses = jsonl(ep / 'registry' / 'registry-access.log')
