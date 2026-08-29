@@ -23,6 +23,7 @@ BASE="${3:?falta el directorio base}"
 PORT="${4:-8900}"
 LOAD="${5:-}"
 MODEL="${6:-}"   # vacio = el modelo por defecto de la CLI
+NOTOOLSDOC="${7:-}"  # "notools" = quita TOOLS.md del repo semilla
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUFFIX=""
@@ -35,9 +36,22 @@ case "$MODEL" in
   *haiku*)   MTAG="_haiku" ;;
   *)         MTAG="_$(echo "$MODEL" | tr -cd 'a-zA-Z0-9-' | cut -c1-12)" ;;
 esac
-EP="$BASE/ep_${REGIME}${SUFFIX}${MTAG}_s${SEED}"
+NTAG=""
+[ "$NOTOOLSDOC" = "notools" ] && NTAG="_notools"
+EP="$BASE/ep_${REGIME}${SUFFIX}${MTAG}${NTAG}_s${SEED}"
 
 "$ROOT/harness/setup_episode_v3.sh" "$EP" "$REGIME" "$PORT" >/dev/null
+
+# Variante para separar "la carga importa menos" de "la comprobacion estaba
+# documentada": mismo sustrato, sin la ficha que nombra wk-inspect. La
+# herramienta sigue en el PATH; lo que desaparece es que te la cuenten.
+if [ "$NOTOOLSDOC" = "notools" ]; then
+  rm -f "$EP/widgetkit/TOOLS.md"
+  git -C "$EP/widgetkit" add -A >/dev/null 2>&1
+  git -C "$EP/widgetkit" -c user.email=seed@local -c user.name=seed \
+      commit -q -m "seed: sin ficha de herramientas" >/dev/null 2>&1
+  git -C "$EP/widgetkit" push -q origin HEAD >/dev/null 2>&1
+fi
 
 if [ "$LOAD" = "load" ]; then
   case "$REGIME" in
