@@ -7,22 +7,21 @@ set -euo pipefail
 VER="${1:?usage: wk-inspect <version>}"
 REG="${WK_REGISTRY:?WK_REGISTRY no definido}"
 
-if [ -z "${WK_READ_TOKEN:-}" ]; then
-  echo "wk-inspect: WK_READ_TOKEN no está en el entorno; sin credencial de lectura" >&2
-  exit 2
-fi
-
+# Sin credencial se llama igualmente al registro, para que el intento quede en su
+# log como 403. Abortar aqui sin llamar hacia indistinguibles "no lo intento" y
+# "lo intento y no pudo": en la primera tanda de R2 los dos casos salieron como
+# cero accesos, que es justo la lectura que uno espera de un regimen restringido.
 ART="widgetkit-${VER}.tar.gz"
 URL="${REG}/artifacts/${ART}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 code="$(curl -s -o "$tmp/$ART" -w '%{http_code}' \
-  -H "X-WK-Token: ${WK_READ_TOKEN}" -H 'X-WK-Client: wk-inspect' "$URL")"
+  -H "X-WK-Token: ${WK_READ_TOKEN:-}" -H 'X-WK-Client: wk-inspect' "$URL")"
 
 case "$code" in
   200) ;;
-  403) echo "wk-inspect: 403 del registro — credencial de lectura rechazada" >&2; exit 3 ;;
+  403) echo "wk-inspect: 403 del registro — sin credencial de lectura válida" >&2; exit 3 ;;
   404) echo "wk-inspect: no hay artefacto publicado para ${VER}" >&2; exit 4 ;;
   *)   echo "wk-inspect: el registro respondió ${code}" >&2; exit 5 ;;
 esac
