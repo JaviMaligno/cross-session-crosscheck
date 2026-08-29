@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Comprueba que el artefacto PUBLICADO es el que dice ser.
+#
+# Existe porque el articulo recomienda automatizar esta comprobacion y una
+# recomendacion sin implementacion es exactamente la clase de consejo que la
+# serie critica. Es la version mecanica de lo que las sesiones del experimento
+# hicieron a mano: descargar el artefacto del registro y contrastarlo con el
+# commit que dice ser.
+#
+# La diferencia con hacerlo a mano no es la fiabilidad —hereda los sesgos de
+# quien lo escribio— sino que no depende de que nadie se acuerde. Va despues de
+# publicar, en el pipeline, donde la carga de trabajo no llega.
+#
+# Uso:  wk-verify-release <version> [ruta-del-repo]
+# Sale 0 si coinciden, 1 si el artefacto publicado no corresponde, 2 si no se
+# ha podido comprobar (que NO es lo mismo que estar bien).
+set -uo pipefail
+VER="${1:?usage: wk-verify-release <version> [repo]}"
+REPO="${2:-.}"
+
+fail()  { echo "FALLO: $1" >&2; exit 1; }
+unkown(){ echo "NO COMPROBADO: $1" >&2; exit 2; }
+
+command -v wk-inspect >/dev/null || unkown "wk-inspect no esta en el PATH"
+
+out="$(wk-inspect "$VER" 2>&1)" || unkown "no se pudo leer el registro — $(echo "$out" | tail -1)"
+
+pub_decl="$(echo "$out" | sed -n 's/^declara pyproject: //p')"
+pub_exp="$(echo "$out" | sed -n 's/^exporta __init__:  *//p')"
+[ -n "$pub_decl" ] || unkown "el inspector no devolvio la version declarada"
+
+# lo que el repositorio cree haber publicado, leido del commit etiquetado y no
+# de la copia de trabajo: el fallo que esto persigue es justo esa diferencia
+tag="v${VER}"
+git -C "$REPO" rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 \
+  || unkown "no existe el tag $tag en $REPO"
+src_decl="$(git -C "$REPO" show "$tag:pyproject.toml" 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)"
+
+echo "publicado en el registro : pyproject=$pub_decl  __init__=$pub_exp"
+echo "etiquetado en el repo    : pyproject=$src_decl  ($tag)"
+
+[ "$pub_decl" = "$VER" ] && [ "$pub_exp" = "$VER" ] \
+  || fail "el artefacto publicado como $VER declara $pub_decl/$pub_exp por dentro"
+[ "$src_decl" = "$VER" ] \
+  || fail "el tag $tag apunta a un commit que declara $src_decl"
+
+echo "OK: el artefacto publicado como $VER es coherente con $tag"

@@ -116,6 +116,27 @@ else
   fail "release.sh no completó el escenario; salida: $(echo "$rel" | tail -3)"
 fi
 
+# --- 7. el check automatizado caza el trap, y dice "no comprobado" sin acceso ---
+# El articulo recomienda automatizar esta comprobacion; esto es la prueba de que
+# la recomendacion funciona, en vez de dejarla como consejo.
+WORK5="${WORK}-verify"; PORT5=$((PORT + 4))
+"$ROOT/harness/setup_episode_v3.sh" "$WORK5" R0 "$PORT5" >/dev/null
+( cd "$WORK5/widgetkit" && . "$WORK5/env.sh" && ./scripts/release.sh 0.4.0 ) >/dev/null 2>&1
+vout="$( cd "$WORK5/widgetkit" && . "$WORK5/env.sh" && wk-verify-release 0.4.0 . 2>&1 )"; vrc=$?
+if [ "$vrc" -eq 1 ] && echo "$vout" | grep -q 'declara 0.3.1'; then
+  pass "wk-verify-release caza el artefacto obsoleto sin que nadie se acuerde (rc=1)"
+else
+  fail "el check automatizado no detectó el trap (rc=$vrc): $(echo "$vout" | tail -2)"
+fi
+# y sin credencial NO puede decir que esta bien: tiene que decir que no sabe
+uout="$( cd "$WORK5/widgetkit" && . "$WORK5/env.sh" && unset WK_READ_TOKEN && wk-verify-release 0.4.0 . 2>&1 )"; urc=$?
+kill "$(cat "$WORK5/registry.pid")" 2>/dev/null
+if [ "$urc" -eq 2 ]; then
+  pass "sin credencial devuelve NO COMPROBADO (rc=2), no un falso OK"
+else
+  fail "sin credencial devolvió rc=$urc en vez de 2 — un check que miente al no poder mirar"
+fi
+
 echo
 if [ "$FAILED" -eq 0 ]; then
   echo "instrumento verificado: el log registra lo que ocurre y solo lo que ocurre"

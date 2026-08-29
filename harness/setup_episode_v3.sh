@@ -26,8 +26,8 @@ READ_TOKEN="read-$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 rm -rf "$DST"; mkdir -p "$DST/registry" "$DST/bin"
 cd "$DST"
 git init -q --bare origin.git
-cp "$ROOT/tools/wk-publish" "$ROOT/tools/wk-inspect" bin/
-chmod +x bin/wk-publish bin/wk-inspect
+cp "$ROOT/tools/wk-publish" "$ROOT/tools/wk-inspect" "$ROOT/tools/wk-verify-release" bin/
+chmod +x bin/wk-publish bin/wk-inspect bin/wk-verify-release
 
 # La credencial de publicacion va DENTRO del publicador, como la llevaria un
 # runner de CI: descubrible para quien abra el script, pero no servida en el

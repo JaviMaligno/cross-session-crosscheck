@@ -2,30 +2,46 @@
 # Corre un episodio de la serie "lo que cuesta la restriccion"
 # (spec 2026-08-28-constraint-cost-design).
 #
-#   run_regime.sh <R0|R1|R2> <semilla> <base> [puerto]
+#   run_regime.sh <R0|R1|R2> <semilla> <base> [puerto] [load]
 #
 # El regimen cambia DOS cosas y solo dos:
 #   - que herramientas tiene la sesion (R1 no tiene Bash: no ejecuta nada)
 #   - si el entorno trae la credencial de lectura del registro (R2 no la trae)
 #
-# El brief de la tarea es el mismo en los tres; R1 anade el bloque del protocolo
-# del runner y nada mas, lo que se verifica con diff antes de correr.
+# El quinto argumento, `load`, anade la SEGUNDA variable: cuatro tickets en vez
+# de uno y un inbox con tres mensajes, uno preguntando por la 0.4.0. Es la
+# condicion donde la pieza anterior encontro la grieta (7/7 sin carga, 2/3 con
+# ella), y aqui se cruza con la restriccion.
+#
+# El brief es el mismo dentro de cada nivel de carga; R1 anade el bloque del
+# protocolo del runner y nada mas, verificable con diff.
 set -euo pipefail
 
-REGIME="${1:?usage: run_regime.sh <R0|R1|R2> <semilla> <base> [puerto]}"
+REGIME="${1:?usage: run_regime.sh <R0|R1|R2> <semilla> <base> [puerto] [load]}"
 SEED="${2:?falta la semilla}"
 BASE="${3:?falta el directorio base}"
 PORT="${4:-8900}"
+LOAD="${5:-}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-EP="$BASE/ep_${REGIME}_s${SEED}"
+SUFFIX=""
+[ "$LOAD" = "load" ] && SUFFIX="_load"
+EP="$BASE/ep_${REGIME}${SUFFIX}_s${SEED}"
 
 "$ROOT/harness/setup_episode_v3.sh" "$EP" "$REGIME" "$PORT" >/dev/null
 
-case "$REGIME" in
-  R1) cp "$ROOT/briefs/ticket-A-mediated.md" "$EP/widgetkit/TICKET.md" ;;
-  *)  cp "$ROOT/briefs/ticket-A-solo.md"     "$EP/widgetkit/TICKET.md" ;;
-esac
+if [ "$LOAD" = "load" ]; then
+  case "$REGIME" in
+    R1) cp "$ROOT/briefs/ticket-A-load-mediated.md" "$EP/widgetkit/TICKET.md" ;;
+    *)  cp "$ROOT/briefs/ticket-A-load-solo.md"     "$EP/widgetkit/TICKET.md" ;;
+  esac
+  cp "$ROOT/briefs/inbox-load.md" "$EP/widgetkit/INBOX.md"
+else
+  case "$REGIME" in
+    R1) cp "$ROOT/briefs/ticket-A-mediated.md" "$EP/widgetkit/TICKET.md" ;;
+    *)  cp "$ROOT/briefs/ticket-A-solo.md"     "$EP/widgetkit/TICKET.md" ;;
+  esac
+fi
 
 git -C "$EP/widgetkit" config user.email a@local
 git -C "$EP/widgetkit" config user.name  sessionA
