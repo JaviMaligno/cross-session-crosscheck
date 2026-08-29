@@ -19,6 +19,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$BASE"
 
 STRONG=""                            # vacio = por defecto de la CLI (Opus 5)
+MID="claude-sonnet-5"
 WEAK="claude-haiku-4-5-20251001"
 
 # --- preflight: ¿hay presupuesto? ---
@@ -46,7 +47,7 @@ PY
 corre() {  # corre <regimen> <semilla> <load|""> <modelo> <etiqueta>
   local reg="$1" seed="$2" load="$3" model="$4" tag="$5"
   local sfx=""; [ "$load" = "load" ] && sfx="_load"
-  local mtag=""; case "$model" in *haiku*) mtag="_haiku";; esac
+  local mtag=""; case "$model" in *haiku*) mtag="_haiku";; *sonnet*) mtag="_sonnet";; esac
   local ep="$BASE/ep_${reg}${sfx}${mtag}_s${seed}"
   if vivo "$ep"; then
     echo "  · ${tag} ya hecho, se salta"
@@ -57,8 +58,12 @@ corre() {  # corre <regimen> <semilla> <load|""> <modelo> <etiqueta>
   PORT=$((PORT + 1))
 }
 
-for MODEL_KIND in strong weak; do
-  if [ "$MODEL_KIND" = strong ]; then M="$STRONG"; MN="opus"; else M="$WEAK"; MN="haiku"; fi
+for MODEL_KIND in strong mid weak; do
+  case "$MODEL_KIND" in
+    strong) M="$STRONG"; MN="opus" ;;
+    mid)    M="$MID";    MN="sonnet" ;;
+    weak)   M="$WEAK";   MN="haiku" ;;
+  esac
   for LOAD in "" load; do
     LN="sin-carga"; [ "$LOAD" = "load" ] && LN="cargado"
     for REG in R0 R1 R2; do

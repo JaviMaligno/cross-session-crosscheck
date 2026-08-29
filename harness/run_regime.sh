@@ -34,6 +34,7 @@ MTAG=""
 case "$MODEL" in
   ''|*opus*) MTAG="" ;;
   *haiku*)   MTAG="_haiku" ;;
+  *sonnet*)  MTAG="_sonnet" ;;
   *)         MTAG="_$(echo "$MODEL" | tr -cd 'a-zA-Z0-9-' | cut -c1-12)" ;;
 esac
 NTAG=""
@@ -71,9 +72,17 @@ git -C "$EP/widgetkit" config user.name  sessionA
 
 # Herramientas. R0 y R2 comparten lista EXACTA: en R2 la inspeccion falla por
 # falta de credencial, nunca por falta de permiso. R1 no tiene Bash en absoluto.
+# Las grafias alternativas del helper de release estan aqui a proposito: con solo
+# "./scripts/release.sh *", tres episodios de Sonnet se quedaron bloqueados por el
+# sistema de permisos por escribir la misma orden de otra forma, y salieron como
+# "no llego al release" — que es justo la lectura que uno espera de un modelo mas
+# debil. Opus y Haiku no chocaron con esto ni una vez, asi que ensanchar no les da
+# nada nuevo: quita un obstaculo de ortografia, no una capacidad.
 COMMON_TOOLS=(Read Write Edit Glob Grep
               "Bash(git *)" "Bash(python *)" "Bash(python3 *)" "Bash(pytest *)"
-              "Bash(./scripts/release.sh *)" "Bash(ls *)" "Bash(cat *)"
+              "Bash(./scripts/release.sh *)" "Bash(scripts/release.sh *)"
+              "Bash(bash *)" "Bash(sh *)"
+              "Bash(ls *)" "Bash(cat *)" "Bash(cd *)"
               "Bash(tar *)" "Bash(curl *)"
               "Bash(wk-inspect *)" "Bash(wk-publish *)")
 MEDIATED_TOOLS=(Read Write Edit Glob Grep)
