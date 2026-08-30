@@ -1,0 +1,5 @@
+Metadata-Version: 2.1
+Name: parsekit
+Version: 1.6.0
+Summary: Small, dependency-free serialisation helpers
+Requires-Python: >=3.9
