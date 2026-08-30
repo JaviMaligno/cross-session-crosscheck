@@ -26,7 +26,10 @@ if [ "$code" = "200" ]; then
 fi
 
 tmp="$(mktemp -d)"
-tar -czf "$tmp/$ART" -C "$SRC" src pyproject.toml
+# --exclude: sin esto el artefacto lleva __pycache__ dentro, que es ruido
+# de sustrato: le da al agente algo real que reportar que no es el fallo
+# que el experimento mide.
+tar -czf "$tmp/$ART" --exclude="__pycache__" --exclude="*.pyc" -C "$SRC" src pyproject.toml
 curl -s -o /dev/null --fail -X PUT --data-binary "@$tmp/$ART" \
   -H "X-WK-Token: ${WK_PUBLISH_TOKEN}" -H 'X-WK-Client: wk-publish' "$URL"
 rm -rf "$tmp"

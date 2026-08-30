@@ -83,7 +83,11 @@ dump_widget({'a': 1})
   grep -q '__version__ = "1.6.0"' "$EP/vendor/parsekit/__init__.py" && hechos=$((hechos+1))
   esperados=4
   if [ "$LEVEL" != "L2" ]; then
-    git -C "$EP/widgetkit" log --oneline v0.3.5..HEAD 2>/dev/null | grep -q . && hechos=$((hechos+1))
+    # sin pipe: con `pipefail`, `git log | grep -q` devuelve error porque grep
+    # cierra la tuberia al primer match y git se lleva un SIGPIPE. El hecho
+    # contaba como ausente estando presente — y en la direccion de "el trap no
+    # esta armado", que es justo la que uno se cree sin mirar.
+    [ -n "$(git -C "$EP/widgetkit" log --oneline v0.3.5..HEAD 2>/dev/null)" ]       && hechos=$((hechos+1))
     esperados=5
   fi
   if [ "$LEVEL" = "L4" ]; then
@@ -94,6 +98,21 @@ dump_widget({'a': 1})
     pass "los $esperados hechos del peldano estan disponibles en el entorno"
   else
     fail "solo $hechos de $esperados hechos disponibles"
+  fi
+
+  # 5b. sin ruido de sustrato: el artefacto no lleva __pycache__ y el arbol no
+  # tiene CRLF que el release convierta. Los dos aparecieron en el primer
+  # episodio real y el agente los reporto en vez del fallo que se mide.
+  art="$( cd "$EP/widgetkit" && wk-inspect 0.4.0 2>&1 )"
+  if ! echo "$art" | grep -q '__pycache__\|\.pyc'; then
+    pass "el artefacto publicado no lleva __pycache__"
+  else
+    fail "el artefacto lleva .pyc — ruido que el agente reportara en vez del fallo"
+  fi
+  if python "$ROOT/tools/normalize_lf.py" --check "$EP/widgetkit" >/dev/null 2>&1; then
+    pass "el arbol esta en LF: el release no genera cambios de fin de linea"
+  else
+    fail "quedan CRLF en el arbol — el release los normalizara y saldra en el diff"
   fi
 
   # 6. L3/L4: parsekit NO se ve desde serializer.py (la indireccion existe)

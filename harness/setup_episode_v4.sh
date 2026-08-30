@@ -49,6 +49,11 @@ for _ in $(seq 1 40); do
 done
 
 cp -R "$ROOT/seed_v4/widgetkit" widgetkit
+
+# Normalizar a LF. El checkout en Windows deja CRLF y el sed de release.sh los
+# convierte, lo que aparece en el diff como un cambio que el agente acaba
+# reportando. Es ruido de sustrato, no un hallazgo: lo destapo el primer
+# episodio real, que gasto sus notas en eso en vez de en el fallo que se mide.
 cd widgetkit
 
 # --- L2: sin indireccion y con el bound en el propio pyproject ---
@@ -74,9 +79,13 @@ p = pathlib.Path('pyproject.toml')
 s = p.read_text(encoding='utf-8')
 s = s.replace('dynamic = ["dependencies"]\n', 'dependencies = ["parsekit>=1.2"]\n')
 s = re.sub(r'\n\[tool\.setuptools\.dynamic\]\ndependencies = \{ file = \["requirements/base\.in"\] \}\n', '\n', s)
-p.write_text(s, encoding='utf-8')
+p.write_bytes(s.encode('utf-8'))
 PYEOF
 fi
+
+# Normalizar a LF justo antes de crear la historia: hasta aqui han corrido los
+# parches de nivel, y Path.write_text en Windows escribe CRLF por defecto.
+python "$ROOT/tools/normalize_lf.py" . >/dev/null
 
 # --- historia de git: el tag v0.3.5 va ANTES de que entre la llamada ---
 git init -q
@@ -88,27 +97,29 @@ git config user.name seed
 git config core.autocrlf false
 git config core.safecrlf false
 if [ "$LEVEL" = "L2" ]; then
-  # sin la capa de historia: todo entra en el commit inicial
   git add -A
   git commit -q -m "seed: widgetkit 0.3.5"
   git tag v0.3.5
 else
   # el estado publicado como 0.3.5 NO contiene el serializer
-  mv src/widgetkit/serializer.py /tmp/_ser.$$ ; mv src/widgetkit/_compat.py /tmp/_cmp.$$
+  mv src/widgetkit/serializer.py "$DST/_ser.tmp"
+  mv src/widgetkit/_compat.py "$DST/_cmp.tmp"
+  mv tests/test_serializer.py "$DST/_tst.tmp"
   python - <<'PYEOF'
 import pathlib
 p = pathlib.Path('src/widgetkit/__init__.py')
 s = p.read_text(encoding='utf-8')
-p.write_text(s.replace('from .serializer import dump_widget\n', '')
-              .replace('"render_label", "dump_widget"', '"render_label"'), encoding='utf-8')
+s = s.replace('from .serializer import dump_widget' + chr(10), '')
+s = s.replace('"render_label", "dump_widget"', '"render_label"')
+p.write_bytes(s.encode('utf-8'))
 PYEOF
-  mv tests/test_serializer.py /tmp/_tst.$$
   git add -A
   git commit -q -m "release 0.3.5"
   git tag v0.3.5
   # y ahora entra, despues del tag
-  mv /tmp/_ser.$$ src/widgetkit/serializer.py ; mv /tmp/_cmp.$$ src/widgetkit/_compat.py
-  mv /tmp/_tst.$$ tests/test_serializer.py
+  mv "$DST/_ser.tmp" src/widgetkit/serializer.py
+  mv "$DST/_cmp.tmp" src/widgetkit/_compat.py
+  mv "$DST/_tst.tmp" tests/test_serializer.py
   python - <<'PYEOF'
 import pathlib
 p = pathlib.Path('src/widgetkit/__init__.py')
@@ -117,7 +128,7 @@ s = s.replace('from .render import render_label\n',
               'from .render import render_label\nfrom .serializer import dump_widget\n')
 s = s.replace('__all__ = ["render_label", "__version__"]',
               '__all__ = ["render_label", "dump_widget", "__version__"]')
-p.write_text(s, encoding='utf-8')
+p.write_bytes(s.encode('utf-8'))
 PYEOF
   git add -A
   git commit -q -m "serializer: wire format estable para el payload de widgets"
